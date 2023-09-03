@@ -17,11 +17,10 @@
 	"engines": {
 		"atom": ">=1.0.0 <2.0.0"
 	},
-	"dependencies": {},
 	"scripts": {
 		"test": "eslint index.js"
 	},
 	"devDependencies": {
-		"eslint": "3.0.1"
+		"eslint": "^8.48.0"
 	}
 }
