@@ -1,3 +1,6 @@
+## 3.0.8
+* Update dependency eslint to ^8.48.0.
+
 ## 3.0.7
 * Added support for MATE Terminal.
 
