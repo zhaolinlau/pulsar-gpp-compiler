@@ -1,35 +1,27 @@
 {
-  "name": "gpp-compiler",
-  "main": "./index.js",
-  "version": "3.0.7",
-  "description": "Compile and run C and C++ within Atom",
-  "keywords": [
-    "compile",
-    "c++",
-    "c",
-    "g++",
-    "gcc",
-    "mingw",
-    "xcode"
-  ],
-  "repository": "https://github.com/kriscross07/atom-gpp-compiler",
-  "license": "MIT",
-  "engines": {
-    "atom": ">=1.0.0 <2.0.0"
-  },
-  "dependencies": {},
-  "author": "kriscross07",
-  "contributors": [
-    "kriscross07",
-    "PoVa",
-    "LinuxMercedes",
-    "farnabaz",
-    "sylxjtu"
-  ],
-  "scripts": {
-    "test": "eslint index.js"
-  },
-  "devDependencies": {
-    "eslint": "3.0.1"
-  }
+	"name": "pulsar-gpp-compiler",
+	"main": "./index.js",
+	"version": "3.0.7",
+	"description": "Compile and run C and C++ within Pulsar",
+	"keywords": [
+		"compile",
+		"c++",
+		"c",
+		"g++",
+		"gcc",
+		"mingw",
+		"xcode"
+	],
+	"repository": "https://github.com/zhaolinlau/pulsar-gpp-compiler",
+	"license": "MIT",
+	"engines": {
+		"atom": ">=1.0.0 <2.0.0"
+	},
+	"dependencies": {},
+	"scripts": {
+		"test": "eslint index.js"
+	},
+	"devDependencies": {
+		"eslint": "3.0.1"
+	}
 }
