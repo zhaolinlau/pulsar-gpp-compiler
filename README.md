@@ -1,6 +1,8 @@
-# gpp-compiler
+# pulsar-gpp-compiler
 
-This Atom package allows you to compile and run C++ and C within the editor.
+A fork of the [gpp-compiler](https://web.pulsar-edit.dev/packages/gpp-compiler), which is no longer being maintained.
+
+This Pulsar package allows you to compile and run C++ and C within the editor.
 
 To compile C or C++, press <kbd>F5</kbd> or right click the file in tree view and click `Compile and Run`.
 
@@ -43,11 +45,11 @@ You'll need to install [XCode](https://developer.apple.com/xcode/).
 
 ```bash
 # to start, you must fork this project
-git clone https://github.com/<your username>/atom-gpp-compiler.git
-cd atom-gpp-compiler
-rm -rf ~/.atom/packages/gpp-compiler
+git clone https://github.com/<your username>/pulsar-gpp-compiler.git
+cd pulsar-gpp-compiler
+rm -rf ~/.pulsar/packages/pulsar-gpp-compiler
 npm install # this will install developer dependencies (eslint)
-apm link # this will create a symbolic link from this directory to ~/.atom/packages
+ppm link # this will create a symbolic link from this directory to ~/.atom/packages
 git checkout -b my-changes # this will create a new branch, change `my-changes` to something else
 # make your changes
 npm test # this will eslint `index.js`, if this gives you any errors, fix them
@@ -55,5 +57,5 @@ npm test # this will eslint `index.js`, if this gives you any errors, fix them
 git add .
 git commit -m "added a feature"
 git push
-# go to https://github.com/<your username>/atom-gpp-compiler.git and click `Create Pull Request`
+# go to https://github.com/<your username>/pulsar-gpp-compiler.git and click `Create Pull Request`
 ```
