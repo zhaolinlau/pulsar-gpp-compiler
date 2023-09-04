@@ -295,7 +295,17 @@ function compile(command, info, args, gdb) {
 			atom.notifications.addError(stderr.replace(/\n/g, "<br/>"));
 
 			if (atom.config.get("gpp-compiler.addCompilingErr")) {
-				fs.writeFile(path.join(info.dir, "compiling_error.txt"), stderr);
+				fs.writeFile(
+					path.join(info.dir, "compiling_error.txt"),
+					stderr,
+					(err) => {
+						if (err) {
+							console.error("Error writing compiling_error.txt:", err);
+						} else {
+							console.log("compiling_error.txt has been written successfully.");
+						}
+					}
+				);
 			}
 		} else {
 			// compilation was successful, but there still may be warnings
@@ -399,7 +409,13 @@ function compile(command, info, args, gdb) {
 			// it exists
 			fs.stat(path.join(info.dir, "compiling_error.txt"), (err) => {
 				if (!err) {
-					fs.unlink(path.join(info.dir, "compiling_error.txt"));
+					fs.unlink(path.join(info.dir, "compiling_error.txt"), (err) => {
+						if (err) {
+							console.error("Error deleting compiling_error.txt:", err);
+						} else {
+							console.log("compiling_error.txt has been deleted successfully.");
+						}
+					});
 				}
 			});
 		}
