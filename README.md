@@ -49,11 +49,11 @@ git clone https://github.com/<your username>/pulsar-gpp-compiler.git
 cd pulsar-gpp-compiler
 rm -rf ~/.pulsar/packages/pulsar-gpp-compiler
 npm install # this will install developer dependencies (eslint)
-ppm link # this will create a symbolic link from this directory to ~/.atom/packages
+ppm link # this will create a symbolic link from this directory to ~/.pulsar/packages
 git checkout -b my-changes # this will create a new branch, change `my-changes` to something else
 # make your changes
 npm test # this will eslint `index.js`, if this gives you any errors, fix them
-# test your changes in Atom, because you ran `apm link`, this package will automatically load
+# test your changes in Pulsar, because you ran `ppm link`, this package will automatically load
 git add .
 git commit -m "added a feature"
 git push
