@@ -17,21 +17,21 @@ module.exports = {
 
 		this.subscriptions.add(
 			atom.commands.add("atom-text-editor", {
-				"gpp-compiler:compile": () => {
-					debug("gpp-compiler:compile");
+				"pulsar-gpp-compiler:compile": () => {
+					debug("pulsar-gpp-compiler:compile");
 					compileFile(getFileType());
 				},
-				"gpp-compiler:gdb": () => {
-					debug("gpp-compiler:gdb");
+				"pulsar-gpp-compiler:gdb": () => {
+					debug("pulsar-gpp-compiler:gdb");
 					compileFile(getFileType(), true);
 				},
 			})
 		);
 		this.subscriptions.add(
 			atom.commands.add(".tree-view .file", {
-				"gpp-compiler:tree-compile": treeCompile,
-				"gpp-compiler:tree-gdb": (e) => {
-					debug("gpp-compiler:tree-gdb");
+				"pulsar-gpp-compiler:tree-compile": treeCompile,
+				"pulsar-gpp-compiler:tree-gdb": (e) => {
+					debug("pulsar-gpp-compiler:tree-gdb");
 					treeCompile(e, true);
 				},
 			})
@@ -117,7 +117,7 @@ if (process.platform === "linux") {
 }
 
 function debug(...args) {
-	if (atom.config.get("gpp-compiler.debug")) {
+	if (atom.config.get("pulsar-gpp-compiler.debug")) {
 		console.info(...args);
 	}
 }
@@ -143,9 +143,9 @@ function getCommand(fileType) {
 
 	switch (fileType) {
 		case "C":
-			return atom.config.get("gpp-compiler.cCompiler");
+			return atom.config.get("pulsar-gpp-compiler.cCompiler");
 		case "C++":
-			return atom.config.get("gpp-compiler.cppCompiler");
+			return atom.config.get("pulsar-gpp-compiler.cppCompiler");
 	}
 }
 
@@ -171,7 +171,9 @@ function getArgs(files, output, fileType, extraArgs) {
 		output,
 		...atom.config
 			// string of all user-defined options
-			.get(`gpp-compiler.c${fileType === "C++" ? "pp" : ""}CompilerOptions`)
+			.get(
+				`pulsar-gpp-compiler.c${fileType === "C++" ? "pp" : ""}CompilerOptions`
+			)
 			// turn that string into an array separated by spaces
 			.split(" ")
 			// remove falsy elements
@@ -186,7 +188,7 @@ function getArgs(files, output, fileType, extraArgs) {
 function getCompiledPath(dir, base) {
 	debug("getCompiledPath()", dir, base);
 
-	if (atom.config.get("gpp-compiler.compileToTmpDirectory")) {
+	if (atom.config.get("pulsar-gpp-compiler.compileToTmpDirectory")) {
 		return path.join(os.tmpdir(), base);
 	} else {
 		return path.join(dir, base);
@@ -261,7 +263,7 @@ function treeCompile(e, gdb) {
 // spawn the compiler to compile files and optionally run the compiled files
 function compile(command, info, args, gdb) {
 	debug("compile()", command, info, args, gdb);
-	debug("config", atom.config.get("gpp-compiler"));
+	debug("config", atom.config.get("pulsar-gpp-compiler"));
 
 	const editor = atom.workspace.getActiveTextEditor();
 
@@ -294,7 +296,7 @@ function compile(command, info, args, gdb) {
 		if (code) {
 			atom.notifications.addError(stderr.replace(/\n/g, "<br/>"));
 
-			if (atom.config.get("gpp-compiler.addCompilingErr")) {
+			if (atom.config.get("pulsar-gpp-compiler.addCompilingErr")) {
 				fs.writeFile(
 					path.join(info.dir, "compiling_error.txt"),
 					stderr,
@@ -309,13 +311,13 @@ function compile(command, info, args, gdb) {
 			}
 		} else {
 			// compilation was successful, but there still may be warnings
-			if (stderr && atom.config.get("gpp-compiler.showWarnings")) {
+			if (stderr && atom.config.get("pulsar-gpp-compiler.showWarnings")) {
 				atom.notifications.addWarning(stderr.replace(/\n/g, "<br/>"));
 			}
 
 			// if the user wants the program to run after compilation, run it in their
 			// favorite terminal
-			if (atom.config.get("gpp-compiler.runAfterCompile")) {
+			if (atom.config.get("pulsar-gpp-compiler.runAfterCompile")) {
 				// options to tell child_process.spawn() to run in the directory of the
 				// program
 				const options = {
@@ -325,7 +327,7 @@ function compile(command, info, args, gdb) {
 				if (process.platform === "linux") {
 					// if the platform is linux, spawn the program in the user set
 					// terminal
-					const terminal = atom.config.get("gpp-compiler.linuxTerminal");
+					const terminal = atom.config.get("pulsar-gpp-compiler.linuxTerminal");
 					const file = getCompiledPath(info.dir, info.name);
 
 					let terminalCommand = null;

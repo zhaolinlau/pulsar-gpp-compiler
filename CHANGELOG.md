@@ -1,3 +1,7 @@
+## 3.0.10
+
+- Fix [Uncaught TypeError: Cannot read property 'split' of undefined](https://github.com/zhaolinlau/pulsar-gpp-compiler/issues/9)
+
 ## 3.0.9
 
 - Fix [Uncaught TypeError: Callback must be a function. Received undefined](https://github.com/zhaolinlau/pulsar-gpp-compiler/issues/6)
