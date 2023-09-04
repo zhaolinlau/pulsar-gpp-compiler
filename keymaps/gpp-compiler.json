@@ -1,6 +1,6 @@
 {
 	"atom-text-editor": {
-		"f5": "gpp-compiler:compile",
-		"f6": "gpp-compiler:gdb"
+		"f5": "pulsar-gpp-compiler:compile",
+		"f6": "pulsar-gpp-compiler:gdb"
 	}
 }

@@ -3,21 +3,21 @@
 		"atom-text-editor": [
 			{
 				"label": "Compile and Run",
-				"command": "gpp-compiler:compile"
+				"command": "pulsar-gpp-compiler:compile"
 			},
 			{
 				"label": "Compile and Debug",
-				"command": "gpp-compiler:gdb"
+				"command": "pulsar-gpp-compiler:gdb"
 			}
 		],
 		".tree-view .file": [
 			{
 				"label": "Compile and Run",
-				"command": "gpp-compiler:tree-compile"
+				"command": "pulsar-gpp-compiler:tree-compile"
 			},
 			{
 				"label": "Compile and Debug",
-				"command": "gpp-compiler:tree-gdb"
+				"command": "pulsar-gpp-compiler:tree-gdb"
 			}
 		]
 	}
