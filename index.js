@@ -97,6 +97,7 @@ module.exports = {
 		// C compiler executable
 		cCompiler: {
 			default: "gcc",
+			description: "The path or name of the C compiler executable to use",
 			title: "C Compiler",
 			type: "string",
 		},
@@ -104,6 +105,7 @@ module.exports = {
 		// C++ compiler executable
 		cppCompiler: {
 			default: "g++",
+			description: "The path or name of the C++ compiler executable to use",
 			title: "C++ Compiler",
 			type: "string",
 		},
@@ -111,7 +113,18 @@ module.exports = {
 		// Compile to a temporary directory
 		compileToTmpDirectory: {
 			default: true,
+			description:
+				"Compile to a temporary directory instead of the specified directory",
 			title: "Compile to Temporary Directory",
+			type: "boolean",
+		},
+
+		// Close the error tab and switch to the current compiling file on successful compilation
+		closeErrorTabOnSuccess: {
+			default: true,
+			description:
+				"Close the error tab and switch to the current compiling file on successful compilation",
+			title: "Close Error Tab on Success",
 			type: "boolean",
 		},
 	},
@@ -245,6 +258,28 @@ module.exports = {
 						atom.notifications.addSuccess("Compilation Successful");
 					}
 
+					// Check the new configuration setting for the behavior
+					const closeErrorTabOnSuccess = atom.config.get(
+						"pulsar-gpp-compiler.closeErrorTabOnSuccess"
+					);
+
+					if (closeErrorTabOnSuccess) {
+						try {
+							// Check if the `compiling_error.txt` file exists and close it if it's open
+							atom.workspace.getTextEditors().forEach((textEditor) => {
+								if (
+									textEditor.getPath() ===
+									path.join(info.dir, "compiling_error.txt")
+								) {
+									textEditor.destroy();
+								}
+							});
+						} catch (err) {
+							this.debug("Error closing compiling_error.txt:", err);
+						}
+					}
+
+					// Always attempt to delete the `compiling_error.txt` file
 					try {
 						// Check if the `compiling_error.txt` file exists and delete it if it does
 						const stat = await fs.stat(
@@ -258,6 +293,9 @@ module.exports = {
 						this.debug("Error deleting compiling_error.txt:", err);
 					}
 
+					// Switch to the current compiling C/C++ file as the active tab/window
+					const fileToOpen = path.join(info.dir, info.base);
+					atom.workspace.open(fileToOpen);
 					resolve();
 				}
 			});

@@ -1,3 +1,7 @@
+## 3.2.0
+
+- Added new configuration setting: `closeErrorTabOnSuccess`.
+
 ## 3.1.1
 
 - Removed unused `reject` parameter in `Promise` constructor.
