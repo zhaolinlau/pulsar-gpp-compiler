@@ -33,7 +33,7 @@ For Arch-based distros, run `sudo pacman -S gcc`.
 
 ### Windows
 
-You'll need to install [MinGW](http://www.mingw.org/) and [add it to your PATH](http://www.howtogeek.com/118594/how-to-edit-your-system-path-for-easy-command-line-access/).
+You'll need to install [MinGW-w64](https://www.mingw-w64.org/) and [add it to your PATH](http://www.howtogeek.com/118594/how-to-edit-your-system-path-for-easy-command-line-access/).
 
 ### Mac
 
