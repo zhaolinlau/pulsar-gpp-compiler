@@ -1,3 +1,7 @@
+## 3.1.1
+
+- Removed unused `reject` parameter in `Promise` constructor.
+
 ## 3.1.0
 
 - Updated to modern JavaScript features for better error handling.
