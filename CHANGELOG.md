@@ -1,3 +1,15 @@
+## 3.1.0
+
+- Updated to modern JavaScript features for better error handling.
+- Improved error messages for easier issue resolution.
+- Clearer and structured configuration options.
+- Improved compiler configuration.
+- Code refactoring for readability.
+- Efficient handling of platform-specific command execution.
+- Conditional console logging for cleaner development.
+- More informative user notifications.
+- Removal of deprecated code and practices.
+
 ## 3.0.10
 
 - Fix [Uncaught TypeError: Cannot read property 'split' of undefined](https://github.com/zhaolinlau/pulsar-gpp-compiler/issues/9)

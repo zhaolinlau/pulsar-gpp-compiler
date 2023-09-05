@@ -2,42 +2,50 @@
 "use strict";
 
 const child_process = require("child_process");
-const fs = require("fs");
+const fs = require("fs").promises; // Use promisified version of fs for async/await
 const path = require("path");
 const os = require("os");
-// const {CompositeDisposable} = require("atom");
-const CompositeDisposable = require("atom").CompositeDisposable;
+const { CompositeDisposable } = require("atom");
 
 module.exports = {
 	activate() {
-		debug("activate()");
-		debug("platform", process.platform);
-
+		// Initialize a composite disposable to manage subscriptions
 		this.subscriptions = new CompositeDisposable();
 
+		// Register commands for the text editor
 		this.subscriptions.add(
 			atom.commands.add("atom-text-editor", {
 				"pulsar-gpp-compiler:compile": () => {
-					debug("pulsar-gpp-compiler:compile");
-					compileFile(getFileType());
+					// When the "Compile" command is triggered, call the compileFile function
+					this.compileFile(this.getFileType());
 				},
+
 				"pulsar-gpp-compiler:gdb": () => {
-					debug("pulsar-gpp-compiler:gdb");
-					compileFile(getFileType(), true);
+					// When the "Compile with Debug" command is triggered, call the compileFile function with gdb flag
+					this.compileFile(this.getFileType(), true);
 				},
 			})
 		);
+
+		// Register commands for the tree view
 		this.subscriptions.add(
 			atom.commands.add(".tree-view .file", {
-				"pulsar-gpp-compiler:tree-compile": treeCompile,
+				"pulsar-gpp-compiler:tree-compile": (e) => {
+					// When the "Compile" command is triggered from the tree view, call the treeCompile function without gdb
+					this.treeCompile(e, false);
+				},
+
 				"pulsar-gpp-compiler:tree-gdb": (e) => {
-					debug("pulsar-gpp-compiler:tree-gdb");
-					treeCompile(e, true);
+					// When the "Compile with Debug" command is triggered from the tree view, call the treeCompile function with gdb flag
+					this.treeCompile(e, true);
 				},
 			})
 		);
 	},
+
+	// Configuration settings for the package
 	config: {
+		// Add compiling error file
 		addCompilingErr: {
 			default: true,
 			description:
@@ -45,381 +53,365 @@ module.exports = {
 			title: "Add `compiling_error.txt`",
 			type: "boolean",
 		},
+
+		// Debug mode
 		debug: {
 			default: false,
-			description: "Logs function calls in console.",
+			description: "Logs function calls in the console.",
 			title: "Debug Mode",
 			type: "boolean",
 		},
+
+		// C compiler command line options
 		cCompilerOptions: {
 			default: "",
 			description: "C compiler command line options",
 			title: "C Compiler Options",
 			type: "string",
 		},
+
+		// C++ compiler command line options
 		cppCompilerOptions: {
 			default: "",
 			description: "C++ compiler command line options",
 			title: "C++ Compiler Options",
 			type: "string",
 		},
+
+		// Run program after compilation
 		runAfterCompile: {
 			default: true,
-			description: "Run program after compiling is done",
+			description: "Run the program after compiling is done",
 			title: "Run After Compile",
 			type: "boolean",
 		},
+
+		// Show compile warnings
 		showWarnings: {
 			default: true,
 			description: "Show compile warnings.",
 			title: "Show Warnings",
 			type: "boolean",
 		},
+
+		// C compiler executable
 		cCompiler: {
 			default: "gcc",
 			title: "C Compiler",
 			type: "string",
 		},
+
+		// C++ compiler executable
 		cppCompiler: {
 			default: "g++",
 			title: "C++ Compiler",
 			type: "string",
 		},
+
+		// Compile to a temporary directory
 		compileToTmpDirectory: {
 			default: true,
 			title: "Compile to Temporary Directory",
 			type: "boolean",
 		},
 	},
+
 	deactivate() {
-		debug("deactivate()");
+		// Dispose of all subscriptions when the package is deactivated
 		this.subscriptions.dispose();
 	},
-	subscriptions: null,
-};
+	async compileFile(fileType, gdb) {
+		const file = this.getFilePath();
 
-// if the user is running linux, add the option to change default terminal
-if (process.platform === "linux") {
-	module.exports.config.linuxTerminal = {
-		default: "XTerm",
-		enum: [
-			"XTerm",
-			"GNOME Terminal",
-			"Konsole",
-			"xfce4-terminal",
-			"pantheon-terminal",
-			"URxvt",
-			"MATE Terminal",
-		],
-		title: "Linux terminal",
-		type: "string",
-	};
-}
+		if (file) {
+			const filePath = file.path;
+			const info = path.parse(filePath);
 
-function debug(...args) {
-	if (atom.config.get("pulsar-gpp-compiler.debug")) {
-		console.info(...args);
-	}
-}
-
-function getFileType(ext) {
-	debug("getFileType()", ext);
-
-	if (ext) {
-		for (const grammar of atom.grammars.getGrammars()) {
-			for (const fileType of grammar.fileTypes) {
-				if (ext === `.${fileType}`) {
-					return grammar.name;
-				}
-			}
-		}
-	} else {
-		return atom.workspace.getActiveTextEditor().getGrammar().name;
-	}
-}
-
-function getCommand(fileType) {
-	debug("getCommand()", fileType);
-
-	switch (fileType) {
-		case "C":
-			return atom.config.get("pulsar-gpp-compiler.cCompiler");
-		case "C++":
-			return atom.config.get("pulsar-gpp-compiler.cppCompiler");
-	}
-}
-
-function getFilePath() {
-	debug("getFilePath()");
-
-	return atom.workspace.getActiveTextEditor().buffer.file;
-}
-
-function getArgs(files, output, fileType, extraArgs) {
-	debug("getArgs()", files, output, fileType, extraArgs);
-
-	// atom throws a SyntaxError if you use ES6's default parameters
-	if (!extraArgs) {
-		extraArgs = [];
-	}
-
-	// array of arguments to pass to the compiler
-	const args = [
-		...extraArgs,
-		...files,
-		"-o",
-		output,
-		...atom.config
-			// string of all user-defined options
-			.get(
-				`pulsar-gpp-compiler.c${fileType === "C++" ? "pp" : ""}CompilerOptions`
-			)
-			// turn that string into an array separated by spaces
-			.split(" ")
-			// remove falsy elements
-			.filter(Boolean),
-	];
-
-	debug("compiler args", args);
-
-	return args;
-}
-
-function getCompiledPath(dir, base) {
-	debug("getCompiledPath()", dir, base);
-
-	if (atom.config.get("pulsar-gpp-compiler.compileToTmpDirectory")) {
-		return path.join(os.tmpdir(), base);
-	} else {
-		return path.join(dir, base);
-	}
-}
-
-function compileFile(fileType, gdb) {
-	debug("compileFile()", fileType, gdb);
-
-	const file = getFilePath();
-
-	if (file) {
-		const filePath = file.path;
-		const info = path.parse(filePath);
-
-		compile(
-			getCommand(fileType),
-			info,
-			getArgs(
-				[filePath],
-				getCompiledPath(info.dir, info.name),
-				fileType,
-				gdb ? ["-g"] : null
-			),
-			gdb
-		);
-	} else {
-		atom.notifications.addError(
-			"<strong>File not found.</strong><br/>Save before compiling."
-		);
-	}
-}
-
-function treeCompile(e, gdb) {
-	debug("treeCompile()", gdb);
-
-	// array of all selected tree view files
-	const names = Array.from(
-		document.querySelectorAll(".tree-view .file.selected > .name")
-	);
-	// array of files to compile
-	const files = names
-		// remove elements that are not of instance HTMLElement
-		.filter((name) => name instanceof HTMLElement)
-		// replace all elements with their attribute `data-path`
-		.map((element) => element.getAttribute("data-path"));
-
-	// file right clicked on
-	let element = e.target;
-
-	if (element.classList.contains("file")) {
-		element = element.firstChild;
-	}
-
-	const info = path.parse(element.getAttribute("data-path"));
-	const fileType = getFileType(info.ext);
-
-	// call compile, telling it to compile either C++ or C
-	compile(
-		getCommand(fileType),
-		info,
-		getArgs(
-			files,
-			getCompiledPath(info.dir, info.name),
-			fileType,
-			gdb ? ["-g"] : null
-		),
-		gdb
-	);
-}
-
-// spawn the compiler to compile files and optionally run the compiled files
-function compile(command, info, args, gdb) {
-	debug("compile()", command, info, args, gdb);
-	debug("config", atom.config.get("pulsar-gpp-compiler"));
-
-	const editor = atom.workspace.getActiveTextEditor();
-
-	// if the user has a text editor open, save it
-	if (editor) {
-		debug("saving...");
-		editor.save();
-	} else {
-		debug("no editor");
-	}
-
-	// spawn the compiler with the working directory of info.dir
-	const child = child_process.spawn(command, args, {
-		cwd: info.dir,
-	});
-
-	// if the compile exits with a non-zero status, alert the user the error
-	let stderr = "";
-
-	child.stderr.on("data", (data) => {
-		stderr += data;
-
-		debug("stderr", data.toString());
-	});
-	// callback when the child's stdio streams close
-	child.on("close", (code) => {
-		debug("exit code", code);
-
-		// if the exit code is a non-zero status, alert the user stderr
-		if (code) {
-			atom.notifications.addError(stderr.replace(/\n/g, "<br/>"));
-
-			if (atom.config.get("pulsar-gpp-compiler.addCompilingErr")) {
-				fs.writeFile(
-					path.join(info.dir, "compiling_error.txt"),
-					stderr,
-					(err) => {
-						if (err) {
-							console.error("Error writing compiling_error.txt:", err);
-						} else {
-							console.log("compiling_error.txt has been written successfully.");
-						}
-					}
+			try {
+				// Attempt to compile the file and handle any potential errors
+				await this.compile(
+					this.getCommand(fileType),
+					info,
+					this.getArgs(
+						[filePath],
+						this.getCompiledPath(info.dir, info.name),
+						fileType,
+						gdb ? ["-g"] : null
+					),
+					gdb
+				);
+			} catch (error) {
+				// Handle and display errors as Atom notifications
+				atom.notifications.addError(
+					`<strong>Error:</strong><br/>${error.message}`
 				);
 			}
 		} else {
-			// compilation was successful, but there still may be warnings
-			if (stderr && atom.config.get("pulsar-gpp-compiler.showWarnings")) {
-				atom.notifications.addWarning(stderr.replace(/\n/g, "<br/>"));
-			}
+			atom.notifications.addError(
+				"<strong>File not found.</strong><br/>Save before compiling."
+			);
+		}
+	},
 
-			// if the user wants the program to run after compilation, run it in their
-			// favorite terminal
-			if (atom.config.get("pulsar-gpp-compiler.runAfterCompile")) {
-				// options to tell child_process.spawn() to run in the directory of the
-				// program
-				const options = {
-					cwd: info.dir,
-				};
+	async treeCompile(e, gdb) {
+		const names = Array.from(
+			document.querySelectorAll(".tree-view .file.selected > .name")
+		);
 
-				if (process.platform === "linux") {
-					// if the platform is linux, spawn the program in the user set
-					// terminal
-					const terminal = atom.config.get("pulsar-gpp-compiler.linuxTerminal");
-					const file = getCompiledPath(info.dir, info.name);
+		const files = names
+			.filter((name) => name instanceof HTMLElement)
+			.map((element) => element.getAttribute("data-path"));
 
-					let terminalCommand = null;
-					let args = null;
+		let element = e.target;
 
-					switch (terminal) {
-						case "GNOME Terminal":
-							terminalCommand = "gnome-terminal";
-							args = ["--command"];
+		if (element.classList.contains("file")) {
+			element = element.firstChild;
+		}
 
-							break;
-						case "Konsole":
-							terminalCommand = "konsole";
-							args = [...(gdb ? [] : ["--hold"]), "-e"];
+		const info = path.parse(element.getAttribute("data-path"));
+		const fileType = this.getFileType(info.ext);
 
-							break;
-						case "xfce4-terminal":
-							terminalCommand = "xfce4-terminal";
-							args = [...(gdb ? [] : ["--hold"]), "--command"];
+		try {
+			// Attempt to compile the selected files from the tree view and handle any potential errors
+			await this.compile(
+				this.getCommand(fileType),
+				info,
+				this.getArgs(
+					files,
+					this.getCompiledPath(info.dir, info.name),
+					fileType,
+					gdb ? ["-g"] : null
+				),
+				gdb
+			);
+		} catch (error) {
+			// Handle and display errors as Atom notifications
+			atom.notifications.addError(
+				`<strong>Error:</strong><br/>${error.message}`
+			);
+		}
+	},
 
-							break;
-						case "pantheon-terminal":
-							terminalCommand = "pantheon-terminal";
-							args = ["-e"];
+	async compile(command, info, args, gdb) {
+		const editor = atom.workspace.getActiveTextEditor();
 
-							break;
-						case "URxvt":
-							terminalCommand = "urxvt";
-							args = [...(gdb ? [] : ["-hold"]), "-e"];
+		if (editor) {
+			// If there's an active text editor, save its contents
+			await editor.save();
+		}
 
-							break;
-						case "MATE Terminal":
-							terminalCommand = "mate-terminal";
-							args = ["--command"];
+		return new Promise((resolve, reject) => {
+			const child = child_process.spawn(command, args, {
+				cwd: info.dir,
+			});
 
-							break;
-						default:
-							terminalCommand = "xterm";
-							args = [...(gdb ? [] : ["-hold"]), "-e"];
+			let stderr = "";
+
+			child.stderr.on("data", (data) => {
+				stderr += data;
+				this.debug("stderr", data.toString());
+			});
+
+			child.on("close", async (code) => {
+				this.debug("exit code", code);
+
+				if (code) {
+					// If the compilation exits with a non-zero status code, handle the error
+					atom.notifications.addError(stderr.replace(/\n/g, "<br/>"));
+
+					if (atom.config.get("pulsar-gpp-compiler.addCompilingErr")) {
+						try {
+							// Attempt to write the compilation error to a file
+							await fs.writeFile(
+								path.join(info.dir, "compiling_error.txt"),
+								stderr
+							);
+							this.debug("compiling_error.txt has been written successfully.");
+						} catch (err) {
+							console.error("Error writing compiling_error.txt:", err);
+						}
+					}
+				} else {
+					if (stderr && atom.config.get("pulsar-gpp-compiler.showWarnings")) {
+						// If there are compilation warnings and the setting to show warnings is enabled, display them
+						atom.notifications.addWarning(stderr.replace(/\n/g, "<br/>"));
 					}
 
-					debug("command", terminalCommand, args, gdb, file, options);
-					child_process.spawn(
-						terminalCommand,
-						[
-							...args,
-							// is there a better one-liner than this?
-							...(gdb ? ["gdb"] : []),
-							file,
-						],
-						options
-					);
-				} else if (process.platform === "win32") {
-					// if the platform is Windows, run start (which is a shell builtin, so
-					// we can't use child_process.spawn), which spawns a new instance of
-					// cmd to run the program
-					const file = getCompiledPath(info.dir, info.name);
-					const command = `start "${info.name}" cmd /C "${
-						gdb ? "gdb" : ""
-					} ${file} ${gdb ? "" : "& echo. & pause"}`;
+					if (atom.config.get("pulsar-gpp-compiler.runAfterCompile")) {
+						// If the user wants to run the program after compilation, invoke the runProgram function
+						this.runProgram(info, gdb);
+					} else {
+						// Display a success notification when the compilation is successful
+						atom.notifications.addSuccess("Compilation Successful");
+					}
 
-					debug("command", command);
-					child_process.exec(command, options);
-				} else if (process.platform === "darwin") {
-					// if the platform is mac, spawn open, which does the same thing as
-					// Windows' start, but is not a builtin, so we can child_process.spawn
-					// it
-					child_process.spawn(
-						"open",
-						[getCompiledPath(info.dir, info.name)],
-						options
-					);
-				}
-			} else {
-				// if the user doesn't want the program to run after compilation, give
-				// them an alert telling them it was successful
-				atom.notifications.addSuccess("Compilation Successful");
-			}
-
-			// since the compilation was successful, remove `compiling_error.txt` if
-			// it exists
-			fs.stat(path.join(info.dir, "compiling_error.txt"), (err) => {
-				if (!err) {
-					fs.unlink(path.join(info.dir, "compiling_error.txt"), (err) => {
-						if (err) {
-							console.error("Error deleting compiling_error.txt:", err);
-						} else {
-							console.log("compiling_error.txt has been deleted successfully.");
+					try {
+						// Check if the `compiling_error.txt` file exists and delete it if it does
+						const stat = await fs.stat(
+							path.join(info.dir, "compiling_error.txt")
+						);
+						if (stat.isFile()) {
+							await fs.unlink(path.join(info.dir, "compiling_error.txt"));
+							this.debug("compiling_error.txt has been deleted successfully.");
 						}
-					});
+					} catch (err) {
+						this.debug("Error deleting compiling_error.txt:", err);
+					}
+
+					resolve();
 				}
 			});
+		});
+	},
+
+	async runProgram(info, gdb) {
+		// Get the path to the compiled file
+		const file = this.getCompiledPath(info.dir, info.name);
+
+		// Check the current platform
+		if (process.platform === "linux") {
+			// Get the configured Linux terminal
+			const terminal = atom.config.get("pulsar-gpp-compiler.linuxTerminal");
+			let terminalCommand = null;
+			let args = null;
+
+			// Determine the appropriate terminal and arguments based on the configured terminal
+			switch (terminal) {
+				case "GNOME Terminal":
+					terminalCommand = "gnome-terminal";
+					args = ["--command"];
+					break;
+				case "Konsole":
+					terminalCommand = "konsole";
+					args = [...(gdb ? [] : ["--hold"]), "-e"];
+					break;
+				case "xfce4-terminal":
+					terminalCommand = "xfce4-terminal";
+					args = [...(gdb ? [] : ["--hold"]), "--command"];
+					break;
+				case "pantheon-terminal":
+					terminalCommand = "pantheon-terminal";
+					args = ["-e"];
+					break;
+				case "URxvt":
+					terminalCommand = "urxvt";
+					args = [...(gdb ? [] : ["-hold"]), "-e"];
+					break;
+				case "MATE Terminal":
+					terminalCommand = "mate-terminal";
+					args = ["--command"];
+					break;
+				default:
+					terminalCommand = "xterm";
+					args = [...(gdb ? [] : ["-hold"]), "-e"];
+			}
+
+			// Log the command and arguments for debugging purposes
+			this.debug("command", terminalCommand, args, gdb, file);
+
+			// Spawn the selected terminal with appropriate arguments
+			child_process.spawn(
+				terminalCommand,
+				[...args, ...(gdb ? ["gdb"] : []), file],
+				{
+					cwd: info.dir,
+				}
+			);
+		} else if (process.platform === "win32") {
+			// On Windows, open the compiled file with optional gdb debugger
+			const command = `start "${info.name}" cmd /C "${
+				gdb ? "gdb" : ""
+			} ${file} ${gdb ? "" : "& echo. & pause"}`;
+
+			// Log the command for debugging purposes
+			this.debug("command", command);
+
+			// Execute the command in a new Windows Command Prompt window
+			child_process.exec(command, {
+				cwd: info.dir,
+			});
+		} else if (process.platform === "darwin") {
+			// On macOS, open the compiled file
+			child_process.spawn("open", [file], {
+				cwd: info.dir,
+			});
 		}
-	});
-}
+	},
+
+	debug(...args) {
+		// Conditionally log messages to the console based on the debug setting
+		if (atom.config.get("pulsar-gpp-compiler.debug")) {
+			console.info(...args);
+		}
+	},
+
+	getFileType(ext) {
+		// Check if an extension (ext) is provided
+		if (ext) {
+			// Iterate through all registered grammars in Atom
+			for (const grammar of atom.grammars.getGrammars()) {
+				// Iterate through the file types associated with each grammar
+				for (const fileType of grammar.fileTypes) {
+					// If the provided extension matches a registered file type, return the grammar name
+					if (ext === `.${fileType}`) {
+						return grammar.name;
+					}
+				}
+			}
+		} else {
+			// If no extension is provided, get the grammar name of the active text editor
+			return atom.workspace.getActiveTextEditor().getGrammar().name;
+		}
+	},
+
+	getCommand(fileType) {
+		// Determine the appropriate compiler command based on the file type
+		switch (fileType) {
+			case "C":
+				return atom.config.get("pulsar-gpp-compiler.cCompiler");
+			case "C++":
+				return atom.config.get("pulsar-gpp-compiler.cppCompiler");
+		}
+	},
+
+	getFilePath() {
+		// Get the file path of the active text editor's buffer
+		return atom.workspace.getActiveTextEditor().buffer.file;
+	},
+
+	getArgs(files, output, fileType, extraArgs) {
+		if (!extraArgs) {
+			extraArgs = [];
+		}
+
+		// Assemble an array of compiler arguments
+		const args = [
+			...extraArgs,
+			...files,
+			"-o",
+			output,
+			...atom.config
+				.get(
+					`pulsar-gpp-compiler.c${
+						fileType === "C++" ? "pp" : ""
+					}CompilerOptions`
+				)
+				.split(" ")
+				.filter(Boolean),
+		];
+
+		this.debug("compiler args", args);
+
+		return args;
+	},
+
+	getCompiledPath(dir, base) {
+		if (atom.config.get("pulsar-gpp-compiler.compileToTmpDirectory")) {
+			// If configured to compile to a temporary directory, use the system's temporary directory
+			return path.join(os.tmpdir(), base);
+		} else {
+			// Otherwise, use the specified directory
+			return path.join(dir, base);
+		}
+	},
+};
