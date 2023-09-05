@@ -200,7 +200,7 @@ module.exports = {
 			await editor.save();
 		}
 
-		return new Promise((resolve, reject) => {
+		return new Promise((resolve) => {
 			const child = child_process.spawn(command, args, {
 				cwd: info.dir,
 			});
