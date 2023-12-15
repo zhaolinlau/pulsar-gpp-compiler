@@ -282,13 +282,9 @@ module.exports = {
 					// Always attempt to delete the `compiling_error.txt` file
 					try {
 						// Check if the `compiling_error.txt` file exists and delete it if it does
-						const stat = await fs.stat(
-							path.join(info.dir, "compiling_error.txt")
-						);
-						if (stat.isFile()) {
-							await fs.unlink(path.join(info.dir, "compiling_error.txt"));
-							this.debug("compiling_error.txt has been deleted successfully.");
-						}
+						await fs.access(path.join(info.dir, "compiling_error.txt"));
+						await fs.unlink(path.join(info.dir, "compiling_error.txt"));
+						this.debug("compiling_error.txt has been deleted successfully.");
 					} catch (err) {
 						this.debug("Error deleting compiling_error.txt:", err);
 					}

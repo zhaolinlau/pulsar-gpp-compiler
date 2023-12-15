@@ -1,3 +1,7 @@
+## 3.2.1
+
+- Improved file existence check in the compilation error handling.
+
 ## 3.2.0
 
 - Added new configuration setting: `closeErrorTabOnSuccess`.
