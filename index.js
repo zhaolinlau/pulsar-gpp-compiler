@@ -215,9 +215,10 @@ module.exports = {
 
 	async compile(command, info, args, gdb) {
 		const editor = atom.workspace.getActiveTextEditor();
-		const activePane = atom.workspace.getActivePane();
+		const activePane = atom.workspace.getActivePane(); // Get the active pane
 
 		if (editor) {
+			// If there's an active text editor, save its contents
 			await editor.save();
 		}
 
@@ -237,24 +238,30 @@ module.exports = {
 				this.debug("exit code", code);
 
 				if (code) {
+					// If the compilation exits with a non-zero status code, handle the error
 					if (atom.config.get("pulsar-gpp-compiler.showErrorNotifications")) {
 						atom.notifications.addError(stderr.replace(/\n/g, "<br/>"));
 					}
 
 					if (atom.config.get("pulsar-gpp-compiler.addCompilingErr")) {
 						try {
+							// Attempt to write the compilation error to a file
 							await fs.writeFile(
 								path.join(info.dir, "compiling_error.txt"),
 								stderr
 							);
 							this.debug("compiling_error.txt has been written successfully.");
 
+							// Open the compiling_error.txt file in a new split pane
 							const errorFile = await atom.workspace.open(
 								path.join(info.dir, "compiling_error.txt"),
 								{ split: "down" }
 							);
 
+							// Display the compiling_error.txt pane
 							atom.workspace.paneContainerForItem(errorFile).activate();
+
+							// Focus back on the active pane (the C/C++ file)
 							activePane.activate();
 						} catch (err) {
 							console.error("Error writing compiling_error.txt:", err);
@@ -309,7 +316,7 @@ module.exports = {
 					const fileToOpen = path.join(info.dir, info.base);
 					atom.workspace.open(fileToOpen);
 
-					// Focus back on the active pane (the C++ file)
+					// Focus back on the active pane (the C/C++ file)
 					activePane.activate();
 
 					resolve();
