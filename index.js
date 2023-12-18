@@ -127,6 +127,14 @@ module.exports = {
 			title: "Close Error Tab on Success",
 			type: "boolean",
 		},
+
+		// Show error notifications
+		showErrorNotifications: {
+			default: false,
+			description: "Show error notifications for compilation errors.",
+			title: "Show Error Notifications",
+			type: "boolean",
+		},
 	},
 
 	deactivate() {
@@ -207,13 +215,13 @@ module.exports = {
 
 	async compile(command, info, args, gdb) {
 		const editor = atom.workspace.getActiveTextEditor();
+		const activePane = atom.workspace.getActivePane();
 
 		if (editor) {
-			// If there's an active text editor, save its contents
 			await editor.save();
 		}
 
-		return new Promise((resolve) => {
+		return new Promise(async (resolve) => {
 			const child = child_process.spawn(command, args, {
 				cwd: info.dir,
 			});
@@ -229,17 +237,25 @@ module.exports = {
 				this.debug("exit code", code);
 
 				if (code) {
-					// If the compilation exits with a non-zero status code, handle the error
-					atom.notifications.addError(stderr.replace(/\n/g, "<br/>"));
+					if (atom.config.get("pulsar-gpp-compiler.showErrorNotifications")) {
+						atom.notifications.addError(stderr.replace(/\n/g, "<br/>"));
+					}
 
 					if (atom.config.get("pulsar-gpp-compiler.addCompilingErr")) {
 						try {
-							// Attempt to write the compilation error to a file
 							await fs.writeFile(
 								path.join(info.dir, "compiling_error.txt"),
 								stderr
 							);
 							this.debug("compiling_error.txt has been written successfully.");
+
+							const errorFile = await atom.workspace.open(
+								path.join(info.dir, "compiling_error.txt"),
+								{ split: "down" }
+							);
+
+							atom.workspace.paneContainerForItem(errorFile).activate();
+							activePane.activate();
 						} catch (err) {
 							console.error("Error writing compiling_error.txt:", err);
 						}
@@ -292,6 +308,10 @@ module.exports = {
 					// Switch to the current compiling C/C++ file as the active tab/window
 					const fileToOpen = path.join(info.dir, info.base);
 					atom.workspace.open(fileToOpen);
+
+					// Focus back on the active pane (the C++ file)
+					activePane.activate();
+
 					resolve();
 				}
 			});
