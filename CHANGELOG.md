@@ -1,3 +1,8 @@
+## 3.3.0
+
+- Added option to open 'compiling_error.txt' in a split pane.
+- Added option to enable/disable error notifications.
+
 ## 3.2.1
 
 - Improved file existence check in the compilation error handling.
