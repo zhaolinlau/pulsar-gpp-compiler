@@ -268,6 +268,13 @@ module.exports = {
 								{ split: atom.config.get("pulsar-gpp-compiler.splitDirection") }
 							);
 
+							// Make the 'compiling_error.txt' file read-only
+							if (errorFile) {
+								errorFile.setSoftTabs(false);
+								errorFile.setSoftWrapped(true);
+								errorFile.setReadOnly(true);
+							}
+
 							// Display the compiling_error.txt pane
 							atom.workspace.paneContainerForItem(errorFile).activate();
 
