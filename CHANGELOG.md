@@ -2,6 +2,7 @@
 
 - Added the option to choose the split direction when opening `compiling_error.txt` (split right, split down, or no split).
 - Set `compiling_error.txt` to be read-only.
+- Removed async from promise executor function.
 
 ## 3.3.0
 
