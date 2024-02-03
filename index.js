@@ -54,6 +54,16 @@ module.exports = {
 			type: "boolean",
 		},
 
+		// Split pane direction for 'compiling_error.txt'
+		splitDirection: {
+			default: "down",
+			description:
+				"Choose the split direction when opening 'compiling_error.txt'.",
+			title: "Split Direction",
+			type: "string",
+			enum: ["down", "right", "none"],
+		},
+
 		// Debug mode
 		debug: {
 			default: false,
@@ -255,7 +265,7 @@ module.exports = {
 							// Open the compiling_error.txt file in a new split pane
 							const errorFile = await atom.workspace.open(
 								path.join(info.dir, "compiling_error.txt"),
-								{ split: "down" }
+								{ split: atom.config.get("pulsar-gpp-compiler.splitDirection") }
 							);
 
 							// Display the compiling_error.txt pane
