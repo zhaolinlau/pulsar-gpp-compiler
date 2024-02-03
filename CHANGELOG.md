@@ -1,3 +1,8 @@
+## 3.4.0
+
+- Added the option to choose the split direction when opening `compiling_error.txt` (split right, split down, or no split).
+- Set `compiling_error.txt` to be read-only.
+
 ## 3.3.0
 
 - Added option to open 'compiling_error.txt' in a split pane.
